@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/robot-controller/static/css/main.40a01ec7.css",
-    "main.js": "/robot-controller/static/js/main.0468d8eb.js",
+    "main.js": "/robot-controller/static/js/main.765b6664.js",
     "static/js/453.4b3aebd2.chunk.js": "/robot-controller/static/js/453.4b3aebd2.chunk.js",
     "index.html": "/robot-controller/index.html",
     "main.40a01ec7.css.map": "/robot-controller/static/css/main.40a01ec7.css.map",
-    "main.0468d8eb.js.map": "/robot-controller/static/js/main.0468d8eb.js.map",
+    "main.765b6664.js.map": "/robot-controller/static/js/main.765b6664.js.map",
     "453.4b3aebd2.chunk.js.map": "/robot-controller/static/js/453.4b3aebd2.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.40a01ec7.css",
-    "static/js/main.0468d8eb.js"
+    "static/js/main.765b6664.js"
   ]
 }
