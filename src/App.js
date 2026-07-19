@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const ESP32_IP = "https://robot-controller.duckdns.org";
+  const ESP32_IP = "https://robot-controller.duckdns.org:8443";
   const [status, setStatus] = useState("Connected. Waiting for command.");
 
   const sendCommand = async (direction) => {
-    setStatus(`Sending command: ${direction}...`);
+  setStatus(`Sending command: ${direction}...`);
 
     try {
       const response = await fetch(`${ESP32_IP}/${direction}`, {
