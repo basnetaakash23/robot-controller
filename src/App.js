@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const ESP32_IP = "http://192.168.1.27:80";
+  const ESP32_IP = "http://67.11.72.218:80";
   const [status, setStatus] = useState("Connected. Waiting for command.");
 
   const sendCommand = async (direction) => {
