@@ -1,30 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import './App.css';
 
 function App() {
-  const ESP32_IP = "https://robot-controller.duckdns.org:443";
-  const [status, setStatus] = useState("Connected. Waiting for command.");
+  const WEBSOCKET_URL = "ws://192.168.1.27:81";
+  const socketRef = useRef(null);
+  const [connectionState, setConnectionState] = useState("connecting");
+  const [status, setStatus] = useState("Connecting to robot...");
 
-  const sendCommand = async (direction) => {
-  setStatus(`Sending command: ${direction}...`);
+  const commandIntervalRef = useRef(null);
 
-    try {
-      const response = await fetch(`${ESP32_IP}/${direction}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
+  useEffect(() => {
+    const socket = new WebSocket(WEBSOCKET_URL);
+    socketRef.current = socket;
 
-      if (response.ok) {
-        setStatus(`Success: Robot ${direction}`);
-      } else {
-        setStatus(`Error: Command ${direction} failed`);
-      }
-    } catch (error) {
-      console.error("Network Error:", error);
-      setStatus("Error: Cannot connect to ESP32.");
+    socket.onopen = () => {
+      setConnectionState("connected");
+      setStatus("Connected. Waiting for command.");
+    };
+
+    socket.onclose = () => {
+      setConnectionState("disconnected");
+      setStatus("Disconnected from robot.");
+    };
+
+    socket.onerror = () => {
+      setConnectionState("disconnected");
+      setStatus("Error: Cannot connect to robot.");
+    };
+
+    return () => {
+      socket.close();
+      socketRef.current = null;
+    };
+  }, []);
+
+    const startMoving = useCallback((event, direction) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    sendCommand(direction); // Send immediately; no initial delay
+
+    commandIntervalRef.current = window.setInterval(() => {
+      sendCommand(direction);
+    }, 100); // 10 messages per second
+  },[]);
+
+  const stopMoving = () => {
+    if (commandIntervalRef.current !== null) {
+      window.clearInterval(commandIntervalRef.current);
+      commandIntervalRef.current = null;
     }
+
+    sendCommand('stop');
+  };
+
+  const sendCommand = (direction) => {
+    const socket = socketRef.current;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      setStatus("Robot is not connected.");
+      return;
+    }
+
+    socket.send(direction);
+    setStatus(`Success: Robot ${direction}`);
   };
 
   // Listen for keyboard events
@@ -33,27 +72,27 @@ function App() {
       switch (event.key) {
         case 'ArrowUp':
           event.preventDefault(); // Prevents page from scrolling
-          sendCommand('forward');
+          startMoving(event, 'forward');
           break;
         case 'ArrowDown':
           event.preventDefault();
-          sendCommand('backward');
+           startMoving(event, 'backward');
           break;
         case 'ArrowLeft':
           event.preventDefault();
-          sendCommand('left');
+           startMoving(event, 'left');
           break;
         case 'ArrowRight':
           event.preventDefault();
-          sendCommand('right');
+           startMoving(event, 'right');
           break;
         case ' ': // Spacebar
           event.preventDefault();
-          sendCommand('stop');
+          stopMoving();
           break;
         case 'Enter':
           event.preventDefault();
-          sendCommand('turn-on'); // Sends a "turn-on" command
+          sendCommand('round');
           break;
         default:
           break;
@@ -66,46 +105,67 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []); // Empty dependency array ensures this only sets up once
+  }, [startMoving, stopMoving]); // Empty dependency array ensures this only sets up once
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>ESP32 Robot Controller</h1>
-        <p className="status-text">{status}</p>
+        <p className={`status-text ${connectionState}`}>{status}</p>
 
         <div className="d-pad">
           {/* Top Row */}
           <div className="row">
-            <button className="control-btn forward" onClick={() => sendCommand('forward')}>
+            <button className="control-btn forward" 
+              onPointerDown={(event) => startMoving(event, 'forward')}
+              onPointerUp={stopMoving}
+              onPointerLeave={stopMoving}
+              onPointerCancel={stopMoving}
+              >
               Forward (↑)
             </button>
           </div>
 
           {/* Middle Row */}
           <div className="row">
-            <button className="control-btn left" onClick={() => sendCommand('left')}>
+            <button className="control-btn left" 
+              onPointerDown={(event) => startMoving(event, 'left')}
+              onPointerUp={stopMoving}
+              onPointerLeave={stopMoving}
+              onPointerCancel={stopMoving}>
               Left (←)
             </button>
-            <button className="control-btn stop" onClick={() => sendCommand('stop')}>
+            <button className="control-btn stop" 
+              onPointerDown={(event) => startMoving(event, 'stop')}
+              onPointerUp={stopMoving}
+              onPointerLeave={stopMoving}
+              onPointerCancel={stopMoving}>
               STOP (Space)
             </button>
-            <button className="control-btn right" onClick={() => sendCommand('right')}>
+            <button className="control-btn right" 
+              onPointerDown={(event) => startMoving(event, 'right')}
+              onPointerUp={stopMoving}
+              onPointerLeave={stopMoving}
+              onPointerCancel={stopMoving}>
               Right (→)
             </button>
           </div>
 
           {/* Bottom Row */}
           <div className="row">
-            <button className="control-btn backward" onClick={() => sendCommand('backward')}>
+            <button className="control-btn backward"
+              onPointerDown={(event) => startMoving(event, 'backward')}
+              onPointerUp={stopMoving}
+              onPointerLeave={stopMoving}
+              onPointerCancel={stopMoving}>
               Backward (↓)
             </button>
           </div>
 
-          {/* Power Button */}
+          {/* Spin Button */}
           <div className="row" style={{ marginTop: '20px' }}>
-             <button className="control-btn" style={{ backgroundColor: '#2196F3' }} onClick={() => sendCommand('turn-on')}>
-              Turn On (Enter)
+            <button className="control-btn power" onClick={() => sendCommand('round')}>
+              Round (Enter)
             </button>
           </div>
         </div>
